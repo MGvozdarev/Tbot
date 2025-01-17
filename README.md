@@ -1,73 +1,15 @@
-import telebot
-import requests
-from datetime import datetime
-import os
+Бот Тг - Улетные цены https://t.me/Flying_prices_bot
 
-API_TOKEN = '7631978521:AAHoPI-PE2_X9WimOzfLEE5XarqDj-owUKk'
-AVIASALES_API_TOKEN = '6d85204831b4af582145a29a6a771e47'
+Мы - полезный и быстрый сервис по поиску дешевых авиабилетов, работающий с помощью токена Авиасейлс
+С помощью нас вы можете найти минимальную цену билетов на конкретную дату 
 
-bot = telebot.TeleBot(API_TOKEN)
+Чтобы запустить код, необходимо подгрузить бибилиотеки:
+1. pip install pyTelegramBotAPI
+2. pip install requests
+В программу уже вшиты готовые токены, поэтому дотуп к боту есть у всех
 
-# URL API для получения данных о ценах на авиабилеты
-AVIASALES_API_URL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates'
+Чтобы найти билеты например из Москвы в Астрахань, нужно назвать IATA код Москвы (MOW) как город отправления, затем IATA код Астрахани (ASF) как город направления 
+Затем необходимо указать дату вылета по формату гггг-мм-чч
+Получайте быстро результаты цен на авиабилеты на интересующие вас направления через Телеграм!
 
-# обработка команды /start
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(message, "Привет! Я бот для отслеживания стоимости авиабилетов. Используйте команду /search, чтобы найти дешевые билеты.")
-
-# обработка команды /search
-@bot.message_handler(commands=['search'])
-def search_flights(message):
-    msg = bot.send_message(message.chat.id, "Введите пункт вылета (IATA код, например MOW):")
-    bot.register_next_step_handler(msg, get_departure)
-
-def get_departure(message):
-    departure = message.text.strip().upper()
-    # проверка на допустимость IATA кода (2-3 символа)
-    if len(departure) < 2 or len(departure) > 3:
-        bot.send_message(message.chat.id, "Некорректный IATA код. Пожалуйста, введите правильный код.")
-        return
-    msg = bot.send_message(message.chat.id, "Введите пункт назначения (IATA код, например DXB):")
-    bot.register_next_step_handler(msg, get_destination, departure)
-
-def get_destination(message, departure):
-    destination = message.text.strip().upper()
-    if len(destination) < 2 or len(destination) > 3:
-        bot.send_message(message.chat.id, "Некорректный IATA код. Пожалуйста, введите правильный код.")
-        return
-    msg = bot.send_message(message.chat.id, "Введите дату вылета (в формате ГГГГ-ММ-ДД, например 2025-01-01):")
-    bot.register_next_step_handler(msg, get_date, departure, destination)
-
-def get_date(message, departure, destination):
-    date = message.text.strip()
-    try:
-        # проверка формата даты
-        datetime.strptime(date, '%Y-%m-%d')
-        payload = {
-            'origin': departure,
-            'destination': destination,
-            'departure_at': date,
-            'currency': 'rub',
-            'token': AVIASALES_API_TOKEN,
-            'limit': 5,  # Ограничиваем количество билетов для демонстрации
-            'sorting': 'price',
-            'one_way': 'true',  # Билеты в одну сторону
-        }
-        response = requests.get(AVIASALES_API_URL, params=payload)
-
-        if response.status_code == 200:
-            data = response.json()
-            if data['data']:
-                for flight in data['data']:
-                    min_price = flight['price']
-                    departure_time = flight['departure_at']
-                    bot.send_message(message.chat.id, f"Цена на билеты из {departure} в {destination} на {departure_time}:\nМинимальная цена: {min_price} RUB")
-            else:
-                bot.send_message(message.chat.id, "Не удалось найти билеты по указанным данным.")
-        else:
-            bot.send_message(message.chat.id, f"Ошибка при получении данных: {response.status_code}. Попробуйте позже.")
-    except ValueError:
-        bot.send_message(message.chat.id, "Некорректный формат даты. Используйте формат ГГГГ-ММ-ДД.")
-
-bot.polling()
+Полезного использования ;)
